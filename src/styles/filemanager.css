@@ -1,0 +1,191 @@
+/* filemanager.css: FileManager 主题与全局样式 */
+
+:root {
+  --el-color-primary: #333333;
+  --el-color-primary-light-3: #666666;
+  --el-color-primary-light-5: #999999;
+  --el-color-primary-light-7: #cccccc;
+  --el-color-primary-light-8: #e6e6e6;
+  --el-color-primary-light-9: #f5f5f5;
+  --el-color-primary-dark-2: #1a1a1a;
+  --el-color-success: #666666;
+  --el-color-warning: #666666;
+  --el-color-danger: #333333;
+  --el-color-error: #333333;
+  --el-text-color-primary: #333333;
+  --el-text-color-regular: #666666;
+  --el-text-color-secondary: #999999;
+  --el-text-color-placeholder: #cccccc;
+  --el-border-color: #e6e6e6;
+  --el-border-color-light: #f0f0f0;
+  --el-border-color-lighter: #f5f5f5;
+  --el-bg-color: #ffffff;
+  --el-bg-color-page: #f5f5f5;
+  --el-bg-color-overlay: #ffffff;
+  --el-disabled-bg-color: #f5f5f5;
+  --el-disabled-text-color: #999999;
+  --el-disabled-border-color: #e6e6e6;
+  --el-button-hover-bg-color: #f5f5f5;
+  --el-button-active-bg-color: #e6e6e6;
+  --el-button-hover-text-color: #333333;
+  --el-button-hover-border-color: #333333;
+}
+
+.el-table {
+  --el-table-header-bg-color: #f5f5f5;
+  --el-table-row-hover-bg-color: #f0f0f0;
+  --el-table-border-color: #e6e6e6;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+}
+
+:deep(.el-table__header) {
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+}
+:deep(.el-table__body) {
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+
+:deep(.el-table__body tr.highlight-row),
+:deep(.el-table__body tr.highlight-row > td.el-table__cell) {
+  animation: highlightFadeOut 2s ease-out forwards;
+}
+@keyframes highlightFadeOut {
+  0%,
+  10% {
+    background-color: rgba(64, 64, 64, 0.2);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+:deep(.el-table__body tr:hover > td.el-table__cell) {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  animation: none;
+}
+
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner),
+:deep(.el-checkbox__input.is-indeterminate .el-checkbox__inner),
+:deep(.el-checkbox__input.is-focus .el-checkbox__inner),
+:deep(.el-table__header .el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: #333;
+  border-color: #333;
+}
+:deep(.el-checkbox__inner:hover),
+:deep(.el-table__header .el-checkbox__inner:hover) {
+  border-color: #333;
+}
+
+.el-button--primary {
+  --el-button-bg-color: #333;
+  --el-button-border-color: #333;
+  --el-button-hover-bg-color: #666;
+  --el-button-hover-border-color: #666;
+  --el-button-active-bg-color: #1a1a1a;
+  --el-button-active-border-color: #1a1a1a;
+  --el-button-disabled-bg-color: #f5f5f5;
+  --el-button-disabled-text-color: #999;
+  --el-button-disabled-border-color: #e4e4e4;
+}
+.el-button--danger {
+  --el-button-bg-color: #666;
+  --el-button-border-color: #666;
+  --el-button-hover-bg-color: #999;
+  --el-button-hover-border-color: #999;
+  --el-button-active-bg-color: #333;
+  --el-button-active-border-color: #333;
+  --el-button-disabled-bg-color: #f5f5f5;
+  --el-button-disabled-text-color: #999;
+  --el-button-disabled-border-color: #e4e4e4;
+}
+:deep(.el-button),
+:deep(.el-button--primary),
+:deep(.el-button--danger),
+:deep(.el-button span),
+:deep(.el-button--primary > span),
+:deep(.el-button--danger > span) {
+  font-weight: 700 !important;
+  transition: all 0.3s !important;
+}
+:deep(.el-button.is-disabled),
+:deep(.el-button.is-disabled:hover),
+:deep(.el-button.is-disabled:focus) {
+  background-color: #f5f5f5 !important;
+  border-color: #e4e4e4 !important;
+  color: #999 !important;
+  cursor: not-allowed;
+}
+
+.upload-demo :deep(.el-button),
+.actions-section .el-button,
+.actions-section .el-upload {
+  margin: 0 !important;
+  border-radius: 6px;
+  font-weight: 700;
+}
+.upload-demo :deep(.el-button) {
+  background-color: #333 !important;
+  border-color: #333 !important;
+  color: #fff !important;
+}
+.upload-demo :deep(.el-button:hover) {
+  background-color: #666 !important;
+  border-color: #666 !important;
+}
+.upload-demo :deep(.el-button:active) {
+  background-color: #1a1a1a !important;
+  border-color: #1a1a1a !important;
+}
+.upload-demo :deep(.el-upload) {
+  border-radius: 6px;
+  overflow: hidden;
+}
+:deep(.connection-info.el-tag),
+:deep(.connection-info.el-tag--info) {
+  background-color: #f5f5f5 !important;
+  border-color: #d9d9d9 !important;
+  color: #333 !important;
+  font-weight: 500;
+}
+
+/* 其他结构、导航、表头、文件名等样式可继续补充 */
+.custom-danger-btn {
+  background-color: #b71c1c !important;
+  border-color: #b71c1c !important;
+  color: #fff !important;
+}
+.custom-danger-btn:hover,
+.custom-danger-btn:active {
+  background-color: #d32f2f !important;
+  border-color: #d32f2f !important;
+}
+.custom-danger-btn.is-disabled,
+.custom-danger-btn.is-disabled:hover,
+.custom-danger-btn.is-disabled:focus {
+  background-color: #f5f5f5 !important;
+  border-color: #e4e4e4 !important;
+  color: #999 !important;
+  cursor: not-allowed !important;
+}
+
+.connection-status .el-button--danger {
+  background-color: #b71c1c !important;
+  border-color: #b71c1c !important;
+  color: #fff !important;
+}
+.connection-status .el-button--danger:hover,
+.connection-status .el-button--danger:active {
+  background-color: #d32f2f !important;
+  border-color: #d32f2f !important;
+}
+.connection-status .el-button--danger.is-disabled,
+.connection-status .el-button--danger.is-disabled:hover,
+.connection-status .el-button--danger.is-disabled:focus {
+  background-color: #f5f5f5 !important;
+  border-color: #e4e4e4 !important;
+  color: #999 !important;
+  cursor: not-allowed !important;
+}
