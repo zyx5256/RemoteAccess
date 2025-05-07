@@ -5,16 +5,7 @@ const { setDisconnected } = useSSH()
 
 function handleNetworkError(error) {
   console.log('handleNetworkError called', error)
-  if (
-    error.status === 0 ||
-    error.status === 500 ||
-    error.status === 502 ||
-    error.status === 503 ||
-    error.status === 504 ||
-    (error.message && error.message.includes('Failed to fetch'))
-  ) {
-    setDisconnected && setDisconnected()
-  }
+  setDisconnected && setDisconnected()
 }
 
 export async function fetchFileList(apiBase, path) {

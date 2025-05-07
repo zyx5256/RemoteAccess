@@ -7,9 +7,6 @@
       <h2 class="ssh-login-title">进入云空间</h2>
       <el-form :model="form" label-width="0" :disabled="isConnecting" class="ssh-login-form">
         <el-form-item>
-          <el-input v-model="form.host" placeholder="IP address" size="large" />
-        </el-form-item>
-        <el-form-item>
           <el-input v-model="form.username" placeholder="Username" size="large" />
         </el-form-item>
         <el-form-item>
@@ -45,26 +42,26 @@ import { ref, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 import { buildApiUrl } from '../utils/urlHelper'
 import VueIcon from './icons/VueIcon.vue'
+import sshConfig from '../config.js'
 
 const emit = defineEmits(['connected'])
 
 const dialogVisible = ref(true)
 const form = reactive({
-  host: '',
   username: '',
   password: '',
 })
 const isConnecting = ref(false)
 
 const handleConnect = async () => {
-  if (!form.host || !form.username || !form.password) {
+  if (!form.username || !form.password) {
     ElMessage.warning('请填写完整的连接信息')
     return
   }
   isConnecting.value = true
   try {
     // 发送连接请求到后端
-    const response = await fetch(buildApiUrl(form.host, '/ssh/connect'), {
+    const response = await fetch(buildApiUrl(sshConfig.host, '/ssh/connect'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -73,14 +70,24 @@ const handleConnect = async () => {
     })
 
     if (!response.ok) {
-      const errorData = await response.json()
+      let errorData = {}
+      try {
+        errorData = await response.json()
+      } catch {
+        errorData.message = '服务器无响应或返回格式错误'
+      }
       throw new Error(errorData.message || '连接失败')
     }
 
-    const data = await response.json()
+    let data = {}
+    try {
+      data = await response.json()
+    } catch {
+      throw new Error('服务器无响应或返回格式错误')
+    }
     if (data.success) {
       dialogVisible.value = false
-      emit('connected', { ...form }, data.currentPath)
+      emit('connected', { ...form, host: sshConfig.host }, data.currentPath)
     } else {
       throw new Error(data.message || '连接失败')
     }

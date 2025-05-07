@@ -126,15 +126,34 @@ const getRowClassName = ({ row }) => {
   return row.name === lastUploadedFile.value ? 'highlight-row' : ''
 }
 
+// 初始化时恢复历史
 onMounted(() => {
-  navigateTo('.')
+  const saved = localStorage.getItem('uploadFilesHistory')
+  if (saved) {
+    try {
+      uploadFiles.value = JSON.parse(saved)
+    } catch (e) {
+      console.warn(e)
+    }
+  }
   if (!isConnected.value) showSSHConfig.value = true
 })
 
-function handleSSHConnectedWrapper(config, initialPath, setCurrentPath, navigateTo) {
-  handleSSHConnected(config, initialPath, setCurrentPath, navigateTo)
+// 监听变化自动保存
+watch(
+  uploadFiles,
+  (val) => {
+    const limited = val.slice(-100)
+    localStorage.setItem('uploadFilesHistory', JSON.stringify(limited))
+  },
+  { deep: true },
+)
+
+function handleSSHConnectedWrapper(config, initialPath, setCurrentPath) {
+  handleSSHConnected(config, initialPath, setCurrentPath)
   showSSHConfig.value = false
   lastSSHConfig = { ...config }
+  navigateTo('.')
 }
 
 function handleDisconnectWrapper() {

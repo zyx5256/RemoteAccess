@@ -53,23 +53,12 @@ export function useUpload(sshConfig, currentPath, navigateTo, setLastUploadedFil
 
   // 处理上传错误
   const handleUploadError = (error, file, fileList) => {
-    let msg = `上传失败：${error.status} ${error.statusText || ''}`
-    if (
-      error &&
-      (error.status === 0 ||
-        error.status === 502 ||
-        error.status === 503 ||
-        error.status === 504 ||
-        (error.message && error.message.includes('Failed to fetch')))
-    ) {
-      setDisconnected && setDisconnected()
-    } else if (!error || !error.status) {
-      msg = `上传失败`
+    setDisconnected && setDisconnected()
+    let msg = '上传失败'
+    if (error && error.status) {
+      msg = `上传失败：${error.status} ${error.statusText || ''}`
     }
     ElMessage.error(msg)
-    if (uploadRef.value) {
-      uploadRef.value.clearFiles()
-    }
     uploadVisible.value = true
   }
 
