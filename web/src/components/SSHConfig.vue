@@ -43,6 +43,7 @@ import { ElMessage } from 'element-plus'
 import { buildApiUrl } from '../utils/urlHelper'
 import VueIcon from './icons/VueIcon.vue'
 import sshConfig from '../config.js'
+import { useSSH } from '../hooks/useSSH'
 
 const emit = defineEmits(['connected'])
 
@@ -52,6 +53,7 @@ const form = reactive({
   password: '',
 })
 const isConnecting = ref(false)
+const { isConnected } = useSSH()
 
 const handleConnect = async () => {
   if (!form.username || !form.password) {
@@ -60,13 +62,17 @@ const handleConnect = async () => {
   }
   isConnecting.value = true
   try {
-    // 发送连接请求到后端
+    // 发送连接请求到后端，body中包含host: sshConfig.host
     const response = await fetch(buildApiUrl(sshConfig.host, '/ssh/connect'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        host: sshConfig.host,
+        username: form.username,
+        password: form.password,
+      }),
     })
 
     if (!response.ok) {
@@ -87,6 +93,7 @@ const handleConnect = async () => {
     }
     if (data.success) {
       dialogVisible.value = false
+      isConnected.value = true
       emit('connected', { ...form, host: sshConfig.host }, data.currentPath)
     } else {
       throw new Error(data.message || '连接失败')

@@ -150,10 +150,10 @@ watch(
 )
 
 function handleSSHConnectedWrapper(config, initialPath, setCurrentPath) {
-  handleSSHConnected(config, initialPath, setCurrentPath)
   showSSHConfig.value = false
   lastSSHConfig = { ...config }
-  navigateTo('.')
+  Object.assign(sshConfig, config)
+    navigateTo('/')
 }
 
 function handleDisconnectWrapper() {

@@ -67,6 +67,9 @@ setInterval(cleanupTempFiles, 3600000);
 // 创建SSH连接
 app.post("/api/ssh/connect", async (req, res) => {
   const { host, username, password } = req.body;
+  if (!host || !username || !password) {
+    return res.status(400).json({ success: false, message: "参数不完整" });
+  }
   console.log(
     "Attempting SSH connection to:",
     host,
@@ -81,32 +84,100 @@ app.post("/api/ssh/connect", async (req, res) => {
 
   sshClient = new Client();
 
+  let responded = false;
+  function safeJson(obj, status = 200) {
+    if (!responded && !res.headersSent) {
+      responded = true;
+      res.status(status).json(obj);
+    }
+  }
+
   sshClient
     .on("ready", () => {
       console.log("SSH connection established");
       sshClient.sftp((err, sftp) => {
         if (err) {
           console.error("SFTP connection failed:", err.message);
-          res
-            .status(500)
-            .json({ success: false, message: "SFTP连接失败: " + err.message });
+          safeJson({ success: false, message: "SFTP连接失败: " + err.message }, 500);
           return;
         }
         console.log("SFTP connection established");
         sftpClient = sftp;
-        // 获取真实当前目录
-        sftp.realpath(".", (err, absPath) => {
-          if (err) {
-            res.json({ success: true, currentPath: "." });
-          } else {
-            res.json({ success: true, currentPath: absPath });
+
+        // SFTP连接建立后，优先检测Windows盘符，不依赖realpath('.')
+        const winDrives = [
+          'C:', 'D:', 'E:', 'F:', 'G:', 'H:', 'I:', 'J:'
+        ];
+        let checked = 0;
+        let availableDrives = [];
+        function checkNextDrive() {
+          if (checked >= winDrives.length) {
+            if (availableDrives.length > 0) {
+              safeJson({
+                success: true,
+                currentPath: '此电脑',
+                files: availableDrives.map(drive => ({
+                  name: drive,
+                  size: null,
+                  updateTime: null,
+                  isDirectory: true,
+                  path: drive
+                }))
+              });
+            } else {
+              // fallback: 非Windows或无盘符可用，尝试home目录
+              const username = req.body.username || process.env.USER || process.env.USERNAME;
+              const homePaths = [
+                `/home/${username}`,
+                `/Users/${username}`
+              ];
+              (function tryHome(i) {
+                if (i >= homePaths.length) {
+                  // 都不存在，fallback到'.'目录
+                  safeJson({ success: true, currentPath: '.' });
+                  return;
+                }
+                sftp.opendir(homePaths[i], (err, handle) => {
+                  if (!err && handle) {
+                    sftp.readdir(homePaths[i], (err, list) => {
+                      if (!err && Array.isArray(list)) {
+                        safeJson({
+                          success: true,
+                          currentPath: homePaths[i],
+                          files: list.map(item => ({
+                            name: item.filename,
+                            size: item.attrs.size,
+                            updateTime: new Date(item.attrs.mtime * 1000).toLocaleString(),
+                            isDirectory: item.attrs.isDirectory(),
+                            path: path.posix.join(homePaths[i], item.filename)
+                          }))
+                        });
+                      } else {
+                        safeJson({ success: true, currentPath: homePaths[i] });
+                      }
+                    });
+                  } else {
+                    tryHome(i + 1);
+                  }
+                });
+              })(0);
+            }
+            return;
           }
-        });
+          const drive = winDrives[checked++];
+          sftp.opendir(drive, (err, handle) => {
+            if (!err && handle) {
+              availableDrives.push(drive);
+            }
+            checkNextDrive();
+          });
+        }
+        checkNextDrive();
       });
     })
     .on("error", (err) => {
       console.error("SSH connection error:", err.message);
-      res.status(500).json({ success: false, message: err.message });
+      safeJson({ success: false, message: err.message }, 500);
     })
     .connect({
       host,
@@ -161,7 +232,9 @@ app.get("/api/files", (req, res) => {
           size: item.attrs.size,
           updateTime: new Date(item.attrs.mtime * 1000).toLocaleString(),
           isDirectory: item.attrs.isDirectory(),
-          path: path.join(absPath, item.filename),
+          path: /^[a-zA-Z]:/.test(item.filename)
+            ? item.filename
+            : path.posix.join(absPath, item.filename),
         }))
         .sort((a, b) => {
           // 首先按类型排序（目录在前）
