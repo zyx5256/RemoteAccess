@@ -4,6 +4,7 @@ import cors from "cors";
 import path from "path";
 import fs from "fs";
 import multer from "multer";
+import archiver from 'archiver'
 
 // 清理临时文件函数
 const cleanupTempFiles = () => {
@@ -376,6 +377,8 @@ app.post("/api/upload", upload.single("file"), async (req, res) => {
 
 // 下载文件
 app.get("/api/download/:filename(*)", (req, res) => {
+  console.log("开始处理下载请求");
+  
   if (!sftpClient) {
     console.log("No SFTP connection available for download");
     res.status(400).json({ success: false, message: "未连接到服务器" });
@@ -383,23 +386,103 @@ app.get("/api/download/:filename(*)", (req, res) => {
   }
 
   const filepath = req.params.filename;
-  console.log("Downloading file:", filepath);
-  const readStream = sftpClient.createReadStream(filepath);
+  console.log("准备下载文件:", filepath);
 
-  readStream.on("error", (err) => {
-    console.error("Error downloading file:", err.message);
-    res.status(500).json({ success: false, message: err.message });
+  // 先检查文件是否存在
+  sftpClient.stat(filepath, (err, stats) => {
+    if (err) {
+      console.error("检查文件状态失败:", err.message);
+      res.status(404).json({ success: false, message: "文件不存在" });
+      return;
+    }
+
+    console.log("文件状态:", {
+      size: stats.size,
+      isFile: stats.isFile(),
+      mode: stats.mode,
+      uid: stats.uid,
+      gid: stats.gid,
+      atime: stats.atime,
+      mtime: stats.mtime
+    });
+
+    if (!stats.isFile()) {
+      console.error("目标不是文件:", filepath);
+      res.status(400).json({ success: false, message: "不是有效的文件" });
+      return;
+    }
+
+    const filename = path.basename(filepath);
+    const encodedFilename = encodeURIComponent(filename);
+    
+    console.log("设置响应头:", {
+      filename: filename,
+      encodedFilename: encodedFilename,
+      size: stats.size
+    });
+
+    // 设置响应头
+    res.setHeader("Content-Type", "application/octet-stream");
+    res.setHeader("Content-Length", stats.size);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename*=UTF-8''${encodedFilename}`
+    );
+
+    // 创建读取流
+    console.log("创建文件读取流");
+    let readStream;
+    try {
+      readStream = sftpClient.createReadStream(filepath, {
+        flags: 'r',
+        encoding: null,
+        autoClose: true
+      });
+    } catch (err) {
+      console.error("创建读取流失败:", err);
+      if (!res.headersSent) {
+        res.status(500).json({ success: false, message: "创建文件读取流失败" });
+      }
+      return;
+    }
+
+    // 处理流错误
+    readStream.on("error", (err) => {
+      console.error("文件读取流错误:", err.message, err.stack);
+      if (!res.headersSent) {
+        res.status(500).json({ success: false, message: err.message });
+      } else {
+        console.log("响应头已发送，结束响应");
+        res.end();
+      }
+    });
+
+    // 处理客户端断开连接
+    req.on("close", () => {
+      console.log("客户端断开连接，销毁读取流");
+      if (readStream) {
+        readStream.destroy();
+      }
+    });
+
+    // 添加进度日志
+    let bytesRead = 0;
+    readStream.on("data", (chunk) => {
+      bytesRead += chunk.length;
+      if (bytesRead % (1024 * 1024) === 0) { // 每1MB记录一次
+        console.log(`已传输: ${(bytesRead / 1024 / 1024).toFixed(2)}MB / ${(stats.size / 1024 / 1024).toFixed(2)}MB`);
+      }
+    });
+
+    // 处理流结束
+    readStream.on("end", () => {
+      console.log("文件传输完成");
+    });
+
+    // 开始传输
+    console.log("开始传输文件");
+    readStream.pipe(res);
   });
-
-  const filename = path.basename(filepath);
-  // 对中文文件名进行 URL 编码
-  const encodedFilename = encodeURIComponent(filename);
-  res.setHeader("Content-Type", "application/octet-stream");
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename*=UTF-8''${encodedFilename}`
-  );
-  readStream.pipe(res);
 });
 
 // 递归删除目录
@@ -481,6 +564,63 @@ app.post("/api/mkdir", (req, res) => {
     res.json({ success: true, message: "目录创建成功" });
   });
 });
+
+// 批量打包下载
+app.post('/api/zip-download', async (req, res) => {
+  if (!sftpClient) {
+    return res.status(400).json({ success: false, message: '未连接到服务器' })
+  }
+  const { files } = req.body
+  if (!Array.isArray(files) || files.length === 0) {
+    return res.status(400).json({ success: false, message: '未选择文件' })
+  }
+
+  res.setHeader('Content-Type', 'application/zip')
+  res.setHeader('Content-Disposition', 'attachment; filename="download.zip"')
+
+  const archive = archiver('zip', { zlib: { level: 9 } })
+  archive.pipe(res)
+
+  // 递归添加文件/文件夹
+  async function addEntry(sftp, entryPath, zipPath) {
+    return new Promise((resolve, reject) => {
+      sftp.stat(entryPath, (err, stats) => {
+        if (err) return reject(err)
+        if (stats.isDirectory()) {
+          sftp.readdir(entryPath, async (err, list) => {
+            if (err) return reject(err)
+            if (!list.length) {
+              archive.append('', { name: zipPath + '/' })
+              return resolve()
+            }
+            let i = 0
+            function next() {
+              if (i >= list.length) return resolve()
+              const item = list[i++]
+              addEntry(sftp, path.posix.join(entryPath, item.filename), path.posix.join(zipPath, item.filename)).then(next).catch(reject)
+            }
+            next()
+          })
+        } else {
+          const stream = sftp.createReadStream(entryPath)
+          archive.append(stream, { name: zipPath })
+          resolve()
+        }
+      })
+    })
+  }
+
+  try {
+    for (const file of files) {
+      const baseName = path.posix.basename(file)
+      await addEntry(sftpClient, file, baseName)
+    }
+    archive.finalize()
+  } catch (err) {
+    archive.abort()
+    res.status(500).end('打包失败: ' + err.message)
+  }
+})
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

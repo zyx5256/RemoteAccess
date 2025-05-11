@@ -8,6 +8,7 @@
           :isConnected="isConnected"
           :showUploadProgress="hasUploadFiles"
           :uploadFiles="uploadFiles"
+          :downloadFiles="downloadFiles"
           @disconnect="handleDisconnectWrapper"
           @reconnect="handleReconnect"
           @toggle-upload-progress="uploadProgressVisible = !uploadProgressVisible"
@@ -40,11 +41,6 @@
           />
         </el-main>
       </el-container>
-      <UploadProgress
-        v-model:dialogVisible="uploadProgressVisible"
-        :files="uploadFiles"
-        :isUploading="isUploading"
-      />
     </template>
   </div>
 </template>
@@ -54,12 +50,12 @@ import { ref, reactive, computed, onMounted, watch, provide } from 'vue'
 import SSHConfig from '../components/SSHConfig.vue'
 import FileManagerHeader from '../components/Header.vue'
 import MainContent from '../components/MainContent.vue'
-import UploadProgress from '../components/UploadProgress.vue'
 import { buildApiUrl } from '../utils/urlHelper'
 import { useFileList } from '../hooks/useFileList.js'
 import { useUpload } from '../hooks/useUpload.js'
 import { useSSH } from '../hooks/useSSH.js'
 import { useFileActions } from '../hooks/useFileActions.js'
+import { useDownload } from '../hooks/useDownload'
 
 const showSSHConfig = ref(false)
 const uploadProgressVisible = ref(false)
@@ -100,16 +96,20 @@ const {
   uploadAction: uploadActionFromUseUpload,
 } = useUpload(sshConfig, currentPath, navigateTo, setLastUploadedFile)
 
+// SSH 相关 hooks
+const { isConnected, sshConfig: sshSshConfig, handleSSHConnected, handleDisconnect } = useSSH()
+
+const { downloadFiles, isDownloading, handleDownload } = useDownload(sshConfig)
+
 // 文件操作相关 hooks
 const { handleBatchDownload, handleBatchDelete, handleCreateDir } = useFileActions(
   sshConfig,
   selectedFiles,
   navigateTo,
   currentPath,
+  handleDownload,
+  downloadFiles
 )
-
-// SSH 相关 hooks
-const { isConnected, sshConfig: sshSshConfig, handleSSHConnected, handleDisconnect } = useSSH()
 
 // 监听 sshConfig 变化
 watch(
