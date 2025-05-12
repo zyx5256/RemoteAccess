@@ -1,18 +1,14 @@
 <template>
   <el-header>
     <div class="header-content">
-      <el-dropdown
-        v-if="isConnected"
-        trigger="hover"
-        placement="bottom-start"
-        :hide-on-click="false"
-      >
+      <el-dropdown v-if="true" trigger="hover" placement="bottom-start" :hide-on-click="false">
         <div
           class="title-section"
           :class="{ clickable: isConnected || showUploadProgress }"
           @mouseenter="hovering = true"
           @mouseleave="hovering = false"
           style="cursor: pointer"
+          @click="$emit('toggle-upload-progress')"
         >
           <transition name="icon-fade" mode="out-in">
             <component :is="hovering ? Upload : VueIcon" class="title-icon" />
@@ -100,7 +96,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['reconnect'])
+const emit = defineEmits(['reconnect', 'toggle-upload-progress'])
 
 const hovering = ref(false)
 
