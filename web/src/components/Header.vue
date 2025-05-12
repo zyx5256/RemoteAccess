@@ -16,29 +16,59 @@
           <h2>云空间</h2>
         </div>
         <template #dropdown>
-          <div class="upload-dropdown-list">
-            <div v-if="!uploadFiles || uploadFiles.length === 0" class="empty-upload-list">
-              暂无上传文件
-            </div>
-            <div v-else>
-              <div v-for="file in uploadFiles" :key="file.uid" class="upload-dropdown-item">
-                <el-icon v-if="file.status === 'success'" class="success"
-                  ><CircleCheckFilled
-                /></el-icon>
-                <el-icon v-else-if="file.status === 'error'" class="error"
-                  ><CircleCloseFilled
-                /></el-icon>
-                <el-icon v-else class="uploading"><Loading /></el-icon>
-                <span class="filename">{{ file.name }}</span>
-                <span class="upload-size"
-                  ><span class="size-cell">{{
-                    formatSize((file.size * file.percentage) / 100)
-                  }}</span>
-                  / <span class="size-cell">{{ formatSize(file.size) }}</span></span
-                >
+          <el-tabs v-model="activeTab" class="download-tabs">
+            <el-tab-pane label="上传列表" name="upload">
+              <div class="upload-dropdown-list">
+                <div v-if="!uploadFiles || uploadFiles.length === 0" class="empty-upload-list">
+                  暂无上传文件
+                </div>
+                <div v-else>
+                  <div v-for="file in uploadFiles" :key="file.uid" class="upload-dropdown-item">
+                    <el-icon v-if="file.status === 'success'" class="success"
+                      ><CircleCheckFilled
+                    /></el-icon>
+                    <el-icon v-else-if="file.status === 'error'" class="error"
+                      ><CircleCloseFilled
+                    /></el-icon>
+                    <el-icon v-else class="uploading"><Loading /></el-icon>
+                    <span class="filename">{{ file.name }}</span>
+                    <span class="upload-size"
+                      ><span class="size-cell">{{
+                        formatSize((file.size * file.percentage) / 100)
+                      }}</span>
+                      / <span class="size-cell">{{ formatSize(file.size) }}</span></span
+                    >
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </el-tab-pane>
+            <el-tab-pane label="下载列表" name="download">
+              <div class="upload-dropdown-list">
+                <div v-if="!downloadFiles || downloadFiles.length === 0" class="empty-upload-list">
+                  暂无下载文件
+                </div>
+                <div v-else>
+                  <div v-for="file in downloadFiles" :key="file.id" class="upload-dropdown-item">
+                    <el-icon v-if="file.status === 'success'" class="success"
+                      ><CircleCheckFilled
+                    /></el-icon>
+                    <el-icon v-else-if="file.status === 'error'" class="error"
+                      ><CircleCloseFilled
+                    /></el-icon>
+                    <el-icon v-else-if="file.status === 'downloading'" class="uploading"
+                      ><Loading
+                    /></el-icon>
+                    <el-icon v-else class="pending"><Clock /></el-icon>
+                    <span class="filename">{{ file.name }}</span>
+                    <span class="upload-size"
+                      ><span class="size-cell">{{ formatSize(file.size * file.progress / 100) }}</span>
+                      / <span class="size-cell">{{ formatSize(file.size) }}</span></span
+                    >
+                  </div>
+                </div>
+              </div>
+            </el-tab-pane>
+          </el-tabs>
         </template>
       </el-dropdown>
       <div
@@ -70,8 +100,8 @@
 <script setup>
 import { ref } from 'vue'
 import VueIcon from './icons/VueIcon.vue'
-import { Upload, CircleCheckFilled, CircleCloseFilled, Loading } from '@element-plus/icons-vue'
-import { ElDropdown, ElIcon } from 'element-plus'
+import { Upload, CircleCheckFilled, CircleCloseFilled, Loading, Clock } from '@element-plus/icons-vue'
+import { ElDropdown, ElIcon, ElTabs, ElTabPane } from 'element-plus'
 
 defineOptions({
   name: 'FileManagerHeader',
@@ -94,11 +124,16 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  downloadFiles: {
+    type: Array,
+    default: () => [],
+  },
 })
 
 const emit = defineEmits(['reconnect', 'toggle-upload-progress'])
 
 const hovering = ref(false)
+const activeTab = ref('upload')
 
 function handleReconnectClick() {
   emit('reconnect')
@@ -247,5 +282,27 @@ function formatSize(size) {
   font-variant-numeric: tabular-nums;
   font-family:
     'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
+}
+
+.download-tabs {
+  min-width: 220px;
+}
+
+.download-tabs :deep(.el-tabs__header) {
+  margin: 0;
+  padding: 0 16px;
+}
+
+.download-tabs :deep(.el-tabs__nav) {
+  width: 100%;
+}
+
+.download-tabs :deep(.el-tabs__item) {
+  flex: 1;
+  text-align: center;
+}
+
+.upload-dropdown-item .pending {
+  color: var(--el-color-info) !important;
 }
 </style>
