@@ -42,7 +42,7 @@ import { ref, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 import { buildApiUrl } from '../utils/urlHelper'
 import VueIcon from './icons/VueIcon.vue'
-import sshConfig from '../config.js'
+import sshConfig from '../../config.js'
 import { useSSH } from '../hooks/useSSH'
 
 const emit = defineEmits(['connected'])
