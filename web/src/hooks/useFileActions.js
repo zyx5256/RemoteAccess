@@ -2,7 +2,14 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { downloadFile, zipDownload, deleteFile, createDir } from '../api/file.js'
 import { buildApiUrl } from '../utils/urlHelper'
 
-export function useFileActions(sshConfig, selectedFiles, navigateTo, currentPath, handleDownload, downloadFilesRef) {
+export function useFileActions(
+  sshConfig,
+  selectedFiles,
+  navigateTo,
+  currentPath,
+  handleDownload,
+  downloadFilesRef,
+) {
   // 批量下载
   const handleBatchDownload = async () => {
     const filesToDownload = selectedFiles.value
@@ -17,10 +24,10 @@ export function useFileActions(sshConfig, selectedFiles, navigateTo, currentPath
           id: Date.now() + Math.random(),
           name: file.name + '.zip',
           path: file.path,
-          size: file.size
+          size: file.size,
           status: 'downloading',
           progress: 0,
-          isZip: true
+          isZip: true,
         }
         if (downloadFilesRef) downloadFilesRef.value.push(task)
         try {
@@ -29,12 +36,15 @@ export function useFileActions(sshConfig, selectedFiles, navigateTo, currentPath
           // 模拟进度（实际 zipDownload 没有进度回调，这里简单模拟）
           let fakeProgress = 0
           const progressTimer = setInterval(() => {
-            if (task.status !== 'downloading') { clearInterval(progressTimer); return }
+            if (task.status !== 'downloading') {
+              clearInterval(progressTimer)
+              return
+            }
             fakeProgress += Math.random() * 10 + 5
             if (fakeProgress > 90) fakeProgress = 90
             task.progress = Math.floor(fakeProgress)
             // 模拟下载大小，避免一直显示0B
-            task.size = Math.floor(fakeProgress * 1024 * 1024 / 100)
+            task.size = Math.floor((fakeProgress * 1024 * 1024) / 100)
           }, 400)
           const blob = await zipDownload(buildApiUrl(sshConfig.host, ''), [file.path])
           clearInterval(progressTimer)
