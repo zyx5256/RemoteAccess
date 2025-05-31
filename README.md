@@ -1,6 +1,7 @@
 # SFTP 文件管理器（Vue3 + Express）
 
 一个现代化的多端 SFTP 文件管理器，支持批量上传、进度管理、历史持久化、断线重连、移动端访问等特性。
+![MainPage](./mainPage.jpeg)
 
 ## 主要特性
 
