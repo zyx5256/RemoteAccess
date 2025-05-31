@@ -95,7 +95,3 @@ npm run dev
 
 欢迎 PR 和 Issue。  
 MIT License.
-
----
-
-如需更详细的 API 文档、二次开发说明或部署脚本，可随时告知！
